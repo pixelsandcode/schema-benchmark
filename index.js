@@ -2,6 +2,8 @@ import Faker from 'faker'
 import Mask from 'json-mask'
 import Ajv from 'ajv'
 
+import schema from './schema'
+
 const argv = require('yargs')
   .option('size', {
     alias: 's',
@@ -10,8 +12,8 @@ const argv = require('yargs')
 
 const collectionSize = 100;
 const masker = 'name,profile/(city,country)'
-var ajv = new Ajv();
-//var validate = ajv.compile(schema);
+var ajv = new Ajv({removeAdditional: true})
+var validate = ajv.compile(schema)
 
 const Generator = {
   user: () => {
@@ -64,10 +66,11 @@ const maskTransformTime = (new Date).getTime()
 
 // Run AJV
 for (step = 0; step < collectionSize; step++) {
-  //AJV RUN COMMAND
+  validate(collection[step])
 }
+
 const AJVTransformTime = (new Date).getTime()
 
 console.log('generate time', generateTime-startTime)
-console.log('transform time', maskTransformTime-generateTime)
-console.log('transform time', AJVTransformTime-maskTransformTime)
+console.log('jsno mask transform time', maskTransformTime-generateTime)
+console.log('ajv transform time', AJVTransformTime-maskTransformTime)
