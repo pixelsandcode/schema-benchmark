@@ -10,7 +10,8 @@ const argv = require('yargs')
     default: 30
   }).argv
 
-const collectionSize = 100;
+const collectionSize = 1000;
+const timeGap = 5000;
 const masker = 'name,profile/(city,country)'
 var ajv = new Ajv({removeAdditional: true})
 var validate = ajv.compile(schema)
@@ -53,24 +54,50 @@ const Generator = {
 
 var step;
 
+const Mappers = {
+  maskTransformTime: [],
+  AJVTransformTime: [],
+  jsonMask: (collection, collectionSize) => {
+    var start = (new Date).getTime()
+    for (step = 0; step < collectionSize; step++) {
+      Mask(collection[step], masker)
+    }
+    Mappers.maskTransformTime.push((new Date).getTime()-start)
+    console.log('json mask transform time', Mappers.maskTransformTime)
+  },
+  AJV: (collection, collectionSize) => {
+    var start = (new Date).getTime()
+    for (step = 0; step < collectionSize; step++) {
+      validate(collection[step])
+    }
+    Mappers.AJVTransformTime.push((new Date).getTime()-start)
+    console.log('ajv transform time', Mappers.AJVTransformTime)
+  }
+}
+
 // Create Data
-const startTime = (new Date).getTime()
-var collection = Generator.collection(collectionSize)
-const generateTime = (new Date).getTime()
+const collection1 = Generator.collection(collectionSize)
+const collection2 = Generator.collection(collectionSize)
+const collection3 = Generator.collection(collectionSize)
+const collection4 = Generator.collection(collectionSize)
 
-// Run JSON-MASK
-for (step = 0; step < collectionSize; step++) {
-  Mask(collection[step], masker)
-}
-const maskTransformTime = (new Date).getTime()
+setTimeout(() => Mappers.jsonMask(collection1, collectionSize), 1*timeGap);
+setTimeout(() => Mappers.AJV(collection1, collectionSize), 2*timeGap);
+setTimeout(() => Mappers.jsonMask(collection2, collectionSize), 3*timeGap);
+setTimeout(() => Mappers.AJV(collection2, collectionSize), 4*timeGap);
+setTimeout(() => Mappers.AJV(collection3, collectionSize), 5*timeGap);
+setTimeout(() => Mappers.jsonMask(collection3, collectionSize), 6*timeGap);
+setTimeout(() => Mappers.AJV(collection4, collectionSize), 7*timeGap);
+setTimeout(() => Mappers.jsonMask(collection4, collectionSize), 8*timeGap);
+setTimeout(() => Mappers.jsonMask(collection1, collectionSize), 9*timeGap);
+setTimeout(() => Mappers.AJV(collection1, collectionSize), 10*timeGap);
+setTimeout(() => Mappers.jsonMask(collection2, collectionSize), 11*timeGap);
+setTimeout(() => Mappers.AJV(collection2, collectionSize), 12*timeGap);
 
-// Run AJV
-for (step = 0; step < collectionSize; step++) {
-  validate(collection[step])
-}
-
-const AJVTransformTime = (new Date).getTime()
-
-console.log('generate time', generateTime-startTime)
-console.log('jsno mask transform time', maskTransformTime-generateTime)
-console.log('ajv transform time', AJVTransformTime-maskTransformTime)
+setTimeout(() => {
+  console.log('============================')
+  let maskSum = Mappers.maskTransformTime.reduce((previous, current) => current += previous)
+  let AJVSum = Mappers.AJVTransformTime.reduce((previous, current) => current += previous)
+  console.log('json mask transform time', Mappers.maskTransformTime, 'Avg.', maskSum / Mappers.maskTransformTime.length)
+  console.log('ajv transform time', Mappers.AJVTransformTime, 'Avg.', AJVSum / Mappers.AJVTransformTime.length)
+}, 13*timeGap);
